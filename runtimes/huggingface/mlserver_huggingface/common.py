@@ -1,13 +1,16 @@
 import os
+import io
+import base64
 import json
 from typing import Optional, Dict
 from distutils.util import strtobool
+from PIL import Image
 
 import numpy as np
 from pydantic import BaseSettings
 from mlserver.errors import MLServerError
 
-from transformers.pipelines import pipeline
+from transformers.pipelines import pipeline, Conversation
 from transformers.pipelines.base import Pipeline
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
@@ -128,8 +131,23 @@ def load_pipeline_from_settings(hf_settings: HuggingFaceSettings) -> Pipeline:
     return pp
 
 
-class NumpyEncoder(json.JSONEncoder):
+class CommonJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
+        if isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
+            return float(str(obj))
+        if isinstance(obj, (np.int_, np.int8, np.int16, np.int32, np.int64)):
+            return int(obj)
+        if isinstance(obj, Image.Image):
+            buf = io.BytesIO()
+            obj.save(buf, format="png")
+            return base64.b64encode(buf.getvalue()).decode()
+        if isinstance(obj, Conversation):
+            return {
+                'uuid': str(obj.uuid),
+                'past_user_inputs': obj.past_user_inputs,
+                'generated_responses': obj.generated_responses,
+                'new_user_input': obj.new_user_input
+            }
         return json.JSONEncoder.default(self, obj)

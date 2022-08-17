@@ -14,7 +14,7 @@ from mlserver_huggingface.common import (
     parse_parameters_from_env,
     InvalidTranformerInitialisation,
     load_pipeline_from_settings,
-    NumpyEncoder,
+    CommonJSONEncoder
 )
 from mlserver_huggingface.codecs import MultiStringRequestCodec
 from transformers.pipelines import SUPPORTED_TASKS
@@ -84,7 +84,7 @@ class HuggingFaceRuntime(MLModel):
         prediction = self._model(*args, **kwargs)
 
         # TODO: Convert hf output to v2 protocol, for now we use to_json
-        str_out = json.dumps(prediction, cls=NumpyEncoder)
+        str_out = json.dumps(prediction, cls=CommonJSONEncoder)
         prediction_encoded = StringCodec.encode_output(payload=[str_out], name="output")
 
         return InferenceResponse(
