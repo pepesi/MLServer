@@ -34,12 +34,15 @@ from mlserver_huggingface.common import CommonJSONEncoder
             '{"ints": [1], "floats": [1.0]}',
         ),
         (np.full((2, 2, 2), 1, dtype=np.int8), "[[[1, 1], [1, 1]], [[1, 1], [1, 1]]]"),
-        (Conversation(
-            text="hello",
-            conversation_id=uuid.UUID('712dcbad-a042-4d9d-ab4d-84f20d6d9e7e'),
-            generated_responses=["hello!"]
-        ), '{"uuid": "712dcbad-a042-4d9d-ab4d-84f20d6d9e7e", "past_user_inputs": [],'
-            + ' "generated_responses": ["hello!"], "new_user_input": "hello"}')
+        (
+            Conversation(
+                text="hello",
+                conversation_id=uuid.UUID('712dcbad-a042-4d9d-ab4d-84f20d6d9e7e'),
+                generated_responses=["hello!"],
+            ),
+            '{"uuid": "712dcbad-a042-4d9d-ab4d-84f20d6d9e7e", "past_user_inputs": [],'
+            + ' "generated_responses": ["hello!"], "new_user_input": "hello"}',
+        ),
     ],
 )
 def test_json_encoder(output, expected):

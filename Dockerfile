@@ -7,7 +7,7 @@ COPY ./runtimes ./runtimes
 COPY \
     setup.py \
     README.md \
-    .
+    ./
 
 # This will build the wheels and place will place them in the
 # /opt/mlserver/dist folder
@@ -24,7 +24,7 @@ ENV MLSERVER_MODELS_DIR=/mnt/models \
 
 RUN apt-get update && \
     apt-get -y --no-install-recommends install \
-        libgomp1 libgl1-mesa-dev libglib2.0-0 build-essential
+        libgomp1 libgl1-mesa-dev libglib2.0-0 build-essential ffmpeg
 
 RUN mkdir /opt/mlserver
 WORKDIR /opt/mlserver
