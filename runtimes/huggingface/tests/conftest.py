@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+from mlserver.types.dataplane import Parameters
 
 from mlserver.utils import install_uvloop_event_loop
 from mlserver.types import InferenceRequest, RequestInput
@@ -48,12 +49,18 @@ def inference_request() -> InferenceRequest:
                 shape=[1],
                 datatype="BYTES",
                 data=["what is your name?"],
+                parameters=Parameters(
+                    content_type="str"
+                )
             ),
             RequestInput(
                 name="context",
                 shape=[1],
                 datatype="BYTES",
                 data=["Hello, I am Seldon, how is it going"],
+                parameters=Parameters(
+                    content_type="str"
+                )
             ),
         ]
     )

@@ -40,7 +40,7 @@ from mlserver_huggingface.common import CommonJSONEncoder
                 conversation_id=uuid.UUID('712dcbad-a042-4d9d-ab4d-84f20d6d9e7e'),
                 generated_responses=["hello!"],
             ),
-            '{"uuid": "712dcbad-a042-4d9d-ab4d-84f20d6d9e7e", "past_user_inputs": [],'
+            '{"conversation_id": "712dcbad-a042-4d9d-ab4d-84f20d6d9e7e", "past_user_inputs": [],'
             + ' "generated_responses": ["hello!"], "new_user_input": "hello"}',
         ),
     ],

@@ -25,6 +25,7 @@ class Parameters(BaseModel):
         extra = Extra.allow
 
     content_type: Optional[str] = None
+    is_single: Optional[bool] = False
     headers: Optional[Dict[str, Any]] = None
 
 

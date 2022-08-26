@@ -4,8 +4,8 @@ import binascii
 from typing import Any, List, Union
 from functools import partial
 
-from ..types import RequestInput, ResponseOutput
-from .utils import is_list_of
+from ..types import RequestInput, ResponseOutput, Parameters
+from .utils import is_list_of, is_single_value
 from .base import InputCodec, register_input_codec
 from .pack import unpack, PackElement
 
@@ -53,7 +53,12 @@ class Base64Codec(InputCodec):
 
     @classmethod
     def encode_output(
-        cls, name: str, payload: List[bytes], use_bytes: bool = True, **kwargs
+        cls,
+        name: str,
+        payload: List[bytes],
+        use_bytes: bool = True,
+        is_single: bool = False,
+        **kwargs
     ) -> ResponseOutput:
         # Assume that payload is already in b64, so we only need to pack it
         packed = map(partial(_encode_base64, use_bytes=use_bytes), payload)
@@ -61,30 +66,49 @@ class Base64Codec(InputCodec):
         return ResponseOutput(
             name=name,
             datatype="BYTES",
+            parameters=Parameters(
+                content_type=cls.ContentType,
+                is_single=is_single,
+            ),
             shape=shape,
             data=list(packed),
         )
 
     @classmethod
-    def decode_output(cls, response_output: ResponseOutput) -> List[bytes]:
+    def decode_output(
+        cls, response_output: ResponseOutput
+    ) -> Union[List[bytes], bytes]:
         packed = response_output.data.__root__
+        if is_single_value(response_output):
+            if len(packed) == 0:
+                raise ValueError("can't decode empty data as a single value")
+            return next(map(_decode_base64, unpack(packed)))
         return list(map(_decode_base64, unpack(packed)))
 
     @classmethod
     def encode_input(
-        cls, name: str, payload: List[bytes], use_bytes: bool = True, **kwargs
+        cls,
+        name: str,
+        payload: List[bytes],
+        use_bytes: bool = True,
+        is_single: bool = False,
+        **kwargs
     ) -> RequestInput:
         # Assume that payload is already in b64, so we only need to pack it
-        output = cls.encode_output(name, payload, use_bytes)
+        output = cls.encode_output(name, payload, use_bytes, is_single, **kwargs)
         return RequestInput(
             name=output.name,
             datatype=output.datatype,
+            parameters=output.parameters,
             shape=output.shape,
             data=output.data,
         )
 
     @classmethod
-    def decode_input(cls, request_input: RequestInput) -> List[bytes]:
+    def decode_input(cls, request_input: RequestInput) -> Union[List[bytes], bytes]:
         packed = request_input.data.__root__
-
+        if is_single_value(request_input):
+            if len(packed) == 0:
+                raise ValueError("can't decode empty data as a single value")
+            return next(map(_decode_base64, unpack(packed)))
         return list(map(_decode_base64, unpack(packed)))

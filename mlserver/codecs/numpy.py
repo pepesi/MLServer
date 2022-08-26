@@ -103,7 +103,7 @@ class NumpyCodec(InputCodec):
     ContentType = "np"
 
     @classmethod
-    def can_encode(csl, payload: Any) -> bool:
+    def can_encode(cls, payload: Any) -> bool:
         return isinstance(payload, np.ndarray)
 
     @classmethod

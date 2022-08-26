@@ -1,24 +1,21 @@
-import json
 import asyncio
 from mlserver.model import MLModel
 from mlserver.settings import ModelSettings
 from mlserver.types import (
     InferenceRequest,
     InferenceResponse,
-)
-from mlserver.codecs import (
-    StringCodec,
+    MetadataModelResponse,
 )
 from mlserver_huggingface.common import (
     HuggingFaceSettings,
     parse_parameters_from_env,
     InvalidTranformerInitialisation,
     load_pipeline_from_settings,
-    CommonJSONEncoder
 )
-from mlserver_huggingface.codecs import MultiStringRequestCodec
+from mlserver_huggingface.codecs import HuggingfaceRequestCodec
 from transformers.pipelines import SUPPORTED_TASKS
 from optimum.pipelines import SUPPORTED_TASKS as SUPPORTED_OPTIMUM_TASKS
+from .common import metainfo_for
 
 
 class HuggingFaceRuntime(MLModel):
@@ -70,25 +67,23 @@ class HuggingFaceRuntime(MLModel):
         return self.ready
 
     async def predict(self, payload: InferenceRequest) -> InferenceResponse:
-        """
-        TODO
-        """
 
-        # TODO: convert and validate?
-        kwargs = self.decode_request(payload, default_codec=MultiStringRequestCodec)
+        kwargs = self.decode_request(payload, default_codec=HuggingfaceRequestCodec)
+        args = kwargs.pop("args", [])
 
-        args = []
-        if "args" in kwargs:
-            args = kwargs["args"]
-            del kwargs["args"]
         prediction = self._model(*args, **kwargs)
+        return self.encode_response(prediction, default_codec=HuggingfaceRequestCodec)
 
-        # TODO: Convert hf output to v2 protocol, for now we use to_json
-        str_out = json.dumps(prediction, cls=CommonJSONEncoder)
-        prediction_encoded = StringCodec.encode_output(payload=[str_out], name="output")
+    async def metadata(self) -> MetadataModelResponse:
 
-        return InferenceResponse(
-            model_name=self.name,
-            model_version=self.version,
-            outputs=[prediction_encoded],
+        task = self.hf_settings.task
+        metadata = metainfo_for(task)
+
+        model_metadata = MetadataModelResponse(
+            name=task,
+            platform=self._settings.platform,
+            versions=self._settings.versions,
+            inputs=metadata.get("inputs", []),
+            outputs=metadata.get("outputs", []),
         )
+        return model_metadata

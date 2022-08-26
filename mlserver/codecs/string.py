@@ -1,8 +1,13 @@
-from typing import Any, List
+from typing import Any, List, Union
 
 from ..types import RequestInput, ResponseOutput, Parameters
 
-from .utils import SingleInputRequestCodec, is_list_of, InputOrOutput
+from .utils import (
+    SingleInputRequestCodec,
+    is_list_of,
+    InputOrOutput,
+    is_single_value,
+)
 from .base import InputCodec, register_input_codec, register_request_codec
 from .pack import unpack, PackElement
 
@@ -27,9 +32,13 @@ def decode_str(encoded: PackElement, str_codec=_DefaultStrCodec) -> str:
     return ""
 
 
-def _decode_input_or_output(input_or_output: InputOrOutput) -> List[str]:
+def _decode_input_or_output(input_or_output: InputOrOutput) -> Union[List[str], str]:
     packed = input_or_output.data.__root__
     unpacked = map(decode_str, unpack(packed))
+    if is_single_value(input_or_output):
+        if len(packed) == 0:
+            raise ValueError("can't decode empty data as a single value")
+        return next(unpacked)
     return list(unpacked)
 
 
@@ -47,7 +56,12 @@ class StringCodec(InputCodec):
 
     @classmethod
     def encode_output(
-        cls, name: str, payload: List[str], use_bytes: bool = True, **kwargs
+        cls,
+        name: str,
+        payload: List[str],
+        use_bytes: bool = True,
+        is_single: bool = False,
+        **kwargs
     ) -> ResponseOutput:
         packed = payload
         if use_bytes:
@@ -59,22 +73,30 @@ class StringCodec(InputCodec):
             datatype="BYTES",
             shape=shape,
             data=list(packed),
-            parameters=Parameters(content_type=cls.ContentType),
+            parameters=Parameters(
+                content_type=cls.ContentType,
+                is_single=is_single,
+            ),
         )
 
     @classmethod
-    def decode_output(cls, response_output: ResponseOutput) -> List[str]:
+    def decode_output(cls, response_output: ResponseOutput) -> Union[List[str], str]:
         return _decode_input_or_output(response_output)
 
     @classmethod
-    def decode_input(cls, request_input: RequestInput) -> List[str]:
+    def decode_input(cls, request_input: RequestInput) -> Union[List[str], str]:
         return _decode_input_or_output(request_input)
 
     @classmethod
     def encode_input(
-        cls, name: str, payload: List[str], use_bytes: bool = True, **kwargs
+        cls,
+        name: str,
+        payload: List[str],
+        use_bytes: bool = True,
+        is_single: bool = False,
+        **kwargs
     ) -> RequestInput:
-        output = cls.encode_output(name, payload, use_bytes)
+        output = cls.encode_output(name, payload, use_bytes, is_single)
 
         return RequestInput(
             name=output.name,

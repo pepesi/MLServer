@@ -57,6 +57,19 @@ def _get_content_type(
     return None
 
 
+def set_content_type(request: Parametrised, content_type: str) -> Optional[str]:
+    if request.parameters is None:
+        request.parameters = Parameters(content_type=content_type)
+    else:
+        request.parameters.content_type = content_type
+
+
+def is_single_value(request: Parametrised) -> bool:
+    if request.parameters is None:
+        return False
+    return bool(request.parameters.is_single)
+
+
 def _save_decoded(parametrised_obj: Parametrised, decoded_payload: Any):
     if not parametrised_obj.parameters:
         parametrised_obj.parameters = Parameters()
